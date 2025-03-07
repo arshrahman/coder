@@ -16,18 +16,19 @@ try {
   
   // Set default model if not specified
   if (!config.model) {
-    config.model = "gpt-4o-mini";
+    config.model = "gemini-2.0-flash";
     console.log("Model not specified in config, using default:", config.model);
   }
 } catch (err) {
   console.error("Error reading config:", err);
   app.quit();
 }
-const openai = new OpenAI({ apiKey: config.apiKey });
+const openai = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseURL  });
 
 let mainWindow;
 let screenshots = [];
 let multiPageMode = false;
+let moveStep = 20; // pixels to move per arrow key press
 
 function updateInstruction(instruction) {
   if (mainWindow?.webContents) {
@@ -69,7 +70,7 @@ async function processScreenshots() {
   try {
     // Build message with text + each screenshot
     const messages = [
-      { type: "text", text: "Can you solve the question for me and give the final answer/code?" }
+      { type: "text", text: "Can you solve the question for me and give the final answer/code? Provide brief explanation about the algorithm and step by step explanations. Write in Java language in modern syntax like a human coder. Your code must be short and clean code with proper error checks" }
     ];
     for (const img of screenshots) {
       messages.push({
@@ -123,6 +124,33 @@ function createWindow() {
   mainWindow.setContentProtection(true);
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+
+  // Add keyboard controls for window movement
+  app.on('browser-window-focus', () => {
+    globalShortcut.register('Up', () => {
+      const [x, y] = mainWindow.getPosition();
+      mainWindow.setPosition(x, y - moveStep);
+    });
+    globalShortcut.register('Down', () => {
+      const [x, y] = mainWindow.getPosition();
+      mainWindow.setPosition(x, y + moveStep);
+    });
+    globalShortcut.register('Left', () => {
+      const [x, y] = mainWindow.getPosition();
+      mainWindow.setPosition(x - moveStep, y);
+    });
+    globalShortcut.register('Right', () => {
+      const [x, y] = mainWindow.getPosition();
+      mainWindow.setPosition(x + moveStep, y);
+    });
+  });
+
+  app.on('browser-window-blur', () => {
+    globalShortcut.unregister('Up');
+    globalShortcut.unregister('Down');
+    globalShortcut.unregister('Left');
+    globalShortcut.unregister('Right');
+  });
 
   // Ctrl+Shift+S => single or final screenshot
   globalShortcut.register('CommandOrControl+Shift+S', async () => {

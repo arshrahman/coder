@@ -29,6 +29,7 @@ let mainWindow;
 let screenshots = [];
 let multiPageMode = false;
 let moveStep = 20; // pixels to move per arrow key press
+let isWindowVisible = true; // Track window visibility state
 
 function updateInstruction(instruction) {
   if (mainWindow?.webContents) {
@@ -40,6 +41,15 @@ function hideInstruction() {
   if (mainWindow?.webContents) {
     mainWindow.webContents.send('hide-instruction');
   }
+}
+
+function toggleWindowVisibility() {
+  if (isWindowVisible) {
+    mainWindow.hide();
+  } else {
+    mainWindow.show();
+  }
+  isWindowVisible = !isWindowVisible;
 }
 
 async function captureScreenshot() {
@@ -101,7 +111,7 @@ function resetProcess() {
   screenshots = [];
   multiPageMode = false;
   mainWindow.webContents.send('clear-result');
-  updateInstruction("Ctrl+Shift+S: Screenshot | Ctrl+Shift+A: Multi-mode");
+  updateInstruction("Ctrl+Shift+S: Screenshot | Ctrl+Shift+A: Multi-mode | Ctrl+Shift+H: Toggle Window");
 }
 
 function createWindow() {
@@ -182,6 +192,14 @@ function createWindow() {
   globalShortcut.register('CommandOrControl+Shift+R', () => {
     resetProcess();
   });
+
+  // Ctrl+Shift+H => toggle window visibility
+  globalShortcut.register('CommandOrControl+Shift+H', () => {
+    toggleWindowVisibility();
+  });
+
+  // Set initial instruction
+  resetProcess();
 }
 
 app.whenReady().then(createWindow);
